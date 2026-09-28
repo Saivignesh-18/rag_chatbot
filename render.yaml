@@ -44,7 +44,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GOOGLE_CLIENT_ID
-        sync: false
+        value: 319420188294-b74l9ah7q95naq3p45bd4sqqltm6931k.apps.googleusercontent.com
       - key: CORS_ORIGINS
         value: https://rag-frontend-s961.onrender.com   # this deployment's real frontend URL
       - key: PRIMARY_LLM
@@ -64,7 +64,7 @@ services:
       - key: VITE_API_BASE_URL
         value: https://rag-backend-8gep.onrender.com    # this deployment's real backend URL
       - key: VITE_GOOGLE_CLIENT_ID
-        sync: false                  # your Google OAuth Client ID (public, baked into the build)
+        value: 319420188294-b74l9ah7q95naq3p45bd4sqqltm6931k.apps.googleusercontent.com   # public; baked into the build
     routes:
       # SPA fallback: serve index.html for client-side routes. Render still serves
       # real files (JS/CSS/assets) directly, so this only catches unknown paths.
