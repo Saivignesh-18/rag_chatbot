@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Theme tokens (semantic). Light is the default (:root); the
+   .dark class (set on <html>) switches to the dark palette.
+   Values are raw "R G B" triplets so Tailwind alpha modifiers
+   (e.g. bg-card/60) work.
+   ============================================================ */
+:root {
+  color-scheme: light;
+  --bg: 248 250 252; /* slate-50 */
+  --panel: 255 255 255; /* elevated surfaces (dialogs, dropdowns) */
+  --card: 255 255 255;
+  --card2: 241 245 249; /* slate-100 */
+  --line: 226 232 240; /* slate-200 */
+  --content: 15 23 42; /* slate-900 */
+  --muted: 71 85 105; /* slate-600 */
+  --subtle: 100 116 139; /* slate-500 */
+  --accent: 79 70 229; /* brand-600 */
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: 11 15 26;
+  --panel: 17 24 39;
+  --card: 24 31 45;
+  --card2: 33 42 58;
+  --line: 42 50 66;
+  --content: 241 245 249;
+  --muted: 148 163 184;
+  --subtle: 100 116 139;
+  --accent: 165 180 252; /* brand-300 */
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--content));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Thin, subtle scrollbars (theme-aware) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--line)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--line));
+  border-radius: 9999px;
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid theme("colors.brand.400");
+  outline-offset: 2px;
+}
+
+/* Respect reduced motion globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,62 @@
+# ============================================================
+#  AI Document Assistant - full stack
+#  Start everything with:  docker compose up --build
+# ============================================================
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: rag_postgres
+    environment:
+      POSTGRES_USER: raguser
+      POSTGRES_PASSWORD: ragpassword
+      POSTGRES_DB: ragdb
+    ports:
+      # Host port 5433 avoids clashing with a locally-installed PostgreSQL on 5432.
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Enables the pgvector extension on first initialisation.
+      - ./backend/app/db/migrations/init.sql:/docker-entrypoint-initdb.d/000_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raguser -d ragdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build: ./backend
+    container_name: rag_backend
+    # Loads GROQ_API_KEY and other secrets from the project .env file.
+    env_file:
+      - .env
+    environment:
+      # Override DB host to the compose service name.
+      DATABASE_URL: postgresql+psycopg2://raguser:ragpassword@postgres:5432/ragdb
+      CORS_ORIGINS: "http://localhost:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist downloaded embedding model between runs.
+      - fastembed_cache:/app/.fastembed_cache
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Empty => app uses same-origin /api, which nginx proxies to backend.
+        VITE_API_BASE_URL: ""
+        # Public Google client id (from .env); the app also has a built-in fallback.
+        VITE_GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+    container_name: rag_frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  postgres_data:
+  fastembed_cache:
