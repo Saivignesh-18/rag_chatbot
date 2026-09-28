@@ -219,23 +219,34 @@ export default function LoginPage({ initialMode = "login" }: { initialMode?: Mod
             </div>
           )}
 
-          {/* Social */}
+          {/* Social. Google always personalizes its own rendered button to
+              "Sign in as <name>" once you're logged into Google, and there's no
+              option to disable that. So we show our own consistent button and
+              layer Google's real (invisible) button on top to capture the click
+              and return a secure ID token — the backend/auth flow is unchanged. */}
           {(mode === "login" || mode === "register") && (
             <>
-              <div className="flex justify-center">
-                <GoogleLogin
-                  onSuccess={(cred) => void onGoogle(cred.credential)}
-                  onError={() =>
-                    setError(
-                      "Google sign-in failed. If you're the developer, authorize this origin in Google Cloud, or use email/password below."
-                    )
-                  }
-                  theme="filled_black"
-                  size="large"
-                  shape="pill"
-                  text={mode === "register" ? "signup_with" : "signin_with"}
-                  width="360"
-                />
+              <div className="relative h-10 w-full">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2.5 rounded-lg border border-white/15 bg-white/[0.04] text-sm font-medium text-white">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[13px] font-bold text-slate-900">
+                    G
+                  </span>
+                  {mode === "register" ? "Sign up with Google" : "Sign in with Google"}
+                </div>
+                <div className="absolute inset-0 overflow-hidden opacity-0" aria-hidden={false}>
+                  <GoogleLogin
+                    onSuccess={(cred) => void onGoogle(cred.credential)}
+                    onError={() =>
+                      setError(
+                        "Google sign-in failed. If you're the developer, authorize this origin in Google Cloud, or use email/password below."
+                      )
+                    }
+                    type="standard"
+                    theme="filled_black"
+                    size="large"
+                    width="400"
+                  />
+                </div>
               </div>
               <div className="my-5 flex items-center gap-3 text-xs text-slate-500">
                 <span className="h-px flex-1 bg-white/10" />
