@@ -46,7 +46,7 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: CORS_ORIGINS
-        sync: false                  # = your frontend URL, e.g. https://rag-frontend.onrender.com
+        value: https://rag-frontend-s961.onrender.com   # this deployment's real frontend URL
       - key: PRIMARY_LLM
         value: groq
       - key: FALLBACK_LLM
@@ -62,7 +62,7 @@ services:
     staticPublishPath: ./frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
-        sync: false                  # = your backend URL, e.g. https://rag-backend.onrender.com
+        value: https://rag-backend-8gep.onrender.com    # this deployment's real backend URL
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false                  # your Google OAuth Client ID (public, baked into the build)
     routes:
