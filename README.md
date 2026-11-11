@@ -60,7 +60,7 @@ User question ──► Embedding ──► Vector search┘
 ## 3. Technology Stack
 
 **Backend:** Python, FastAPI, SQLAlchemy, Pydantic, Uvicorn, python-dotenv
-**Vector DB:** PostgreSQL + pgvector
+**Database:** Supabase (hosted PostgreSQL + pgvector)
 **Embeddings:** `fastembed` (local ONNX models, no extra API key) — configurable
 **LLM:** Groq API (primary) with automatic Google **Gemini** fallback, behind a provider router
 **Parsing:** pypdf (PDF, page-aware), python-docx (DOCX), UTF-8 text (TXT)
@@ -68,9 +68,9 @@ User question ──► Embedding ──► Vector search┘
 
 ## 4. Prerequisites
 
-- Python 3.11+ (tested on 3.13)
+- Python 3.11+ (tested on 3.12/3.13)
 - Node.js 18+ (tested on 20/24)
-- Docker + Docker Compose (recommended, for PostgreSQL + pgvector)
+- A free Supabase project (PostgreSQL + pgvector): https://supabase.com
 - A Groq API key: https://console.groq.com/keys
 
 ## 5. Virtual Environment Setup
@@ -99,7 +99,7 @@ Copy `.env.example` to `.env` and fill in values (at minimum `GROQ_API_KEY`).
 | Variable | Description | Example |
 | --- | --- | --- |
 | `GROQ_API_KEY` | Groq API key (backend only, never commit) | `gsk_...` |
-| `DATABASE_URL` | SQLAlchemy Postgres URL | `postgresql+psycopg2://raguser:ragpassword@localhost:5433/ragdb` |
+| `DATABASE_URL` | Supabase Postgres URL (SSL required) | `postgresql://postgres.<ref>:<pwd>@aws-1-<region>.pooler.supabase.com:5432/postgres?sslmode=require` |
 | `GROQ_MODEL` | Groq model id (primary LLM) | `openai/gpt-oss-20b` |
 | `GEMINI_API_KEY` | Google Gemini key (backend only; fallback LLM) | `AQ...` / `AIza...` |
 | `GEMINI_MODEL` | Gemini model id | `gemini-flash-latest` |
@@ -152,34 +152,29 @@ Both paths return the same app JWT, and all other APIs are identical afterwards.
 > **Authorized JavaScript origin** for the OAuth client in the Google Cloud console,
 > otherwise the Google button will not render/sign in.
 
-## 7. PostgreSQL Setup
+## 7. Database Setup (Supabase)
 
-The easiest path is Docker (see section 12). For local (non-Docker) development you
-can run just the database in a container:
+This project uses **Supabase** (hosted PostgreSQL + pgvector) — no local database
+and no Docker required.
 
-```bash
-docker run -d --name rag_postgres \
-  -e POSTGRES_USER=raguser -e POSTGRES_PASSWORD=ragpassword -e POSTGRES_DB=ragdb \
-  -p 5433:5432 pgvector/pgvector:pg16
-```
+1. Create a free project at https://supabase.com.
+2. Enable pgvector: Dashboard → **Database → Extensions** → search `vector` → enable.
+   (The backend also runs `CREATE EXTENSION IF NOT EXISTS vector` on startup.)
+3. Copy the **Session pooler** connection string: Dashboard → **Connect** (or
+   Project Settings → Database) → Connection string → **Session pooler**. It looks like:
+   `postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres`
+4. Put it in `.env` as `DATABASE_URL` and append `?sslmode=require` (Supabase requires
+   SSL). The app normalizes the scheme to `postgresql+psycopg2://` automatically.
 
-> **Why host port 5433?** Many machines already run PostgreSQL on the default
-> `5432`. To avoid clashes, this project maps the container's `5432` to host
-> **`5433`** everywhere host-facing. Inside Docker Compose the backend still talks
-> to the database on the internal `5432`. If you prefer `5432`, change
-> `DATABASE_URL` and the compose port mapping accordingly.
+Tables are created automatically on the first backend startup — no manual migration.
 
-To use your own PostgreSQL, create a database and user matching your `DATABASE_URL`.
+> Any Postgres with the `vector` extension works too; just point `DATABASE_URL` at it.
 
-## 8. pgvector Setup
+## 8. pgvector
 
-The application requires the `vector` extension. With the provided Docker image
-(`pgvector/pgvector:pg16`) it is available automatically and enabled by
-`backend/app/db/migrations/init.sql`. On a manual install run:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-```
+pgvector is provided by Supabase (enable the `vector` extension as in section 7). The
+app stores 384-dim embeddings (`BAAI/bge-small-en-v1.5`) in a `vector` column and runs
+`CREATE EXTENSION IF NOT EXISTS vector` on startup.
 
 ## 9. Backend Setup
 
@@ -207,33 +202,34 @@ App: http://localhost:3000
 
 ## 11. Running the Application
 
-1. Start PostgreSQL (Docker or local).
-2. Start the backend (`uvicorn ...`).
-3. Start the frontend (`npm run dev`).
+1. Set `DATABASE_URL` in `.env` to your Supabase connection string (section 7).
+2. Start the backend (`uvicorn app.main:app --reload --app-dir backend`).
+3. Start the frontend (`cd frontend && npm run dev`).
 4. Open http://localhost:3000, upload a document, and start asking questions.
 
-## 12. Docker Setup
+> If your machine can't run the backend natively (blocked ONNX/numpy), point the
+> frontend at your deployed backend by setting `VITE_API_BASE_URL` in `frontend/.env`
+> and run only `npm run dev` locally.
 
-With Docker Desktop running and `.env` populated (at least `GROQ_API_KEY`):
+## 12. Deployment & Hosting
 
-```bash
-docker compose up --build
-```
+This is a standard three-part app — a FastAPI backend, a static React build, and a
+**Supabase** database — with **no Docker and no platform lock-in**. Host it however
+you like:
 
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8000
-- PostgreSQL: localhost:5433 (container internal 5432)
+- **Backend:** any environment that can run Python and the `fastembed` (ONNX) native
+  library — a Linux/macOS machine, a VM, or a Python host. Serve with
+  `uvicorn app.main:app --host 0.0.0.0 --port <port>` and set the env vars from
+  section 6 (including your Supabase `DATABASE_URL`).
+- **Frontend:** `npm run build` outputs static files in `frontend/dist` for any
+  static host/CDN. Set `VITE_API_BASE_URL` to the backend's URL at build time and add
+  that origin to `CORS_ORIGINS` on the backend.
+- **Database:** Supabase (section 7).
 
-Services:
-
-- **postgres** — `pgvector/pgvector:pg16`, extension enabled on first init.
-- **backend** — FastAPI (Uvicorn). Reads `GROQ_API_KEY` from `.env` (git-ignored);
-  `DATABASE_URL` is overridden to the internal `postgres:5432`.
-- **frontend** — production React build served by nginx, which reverse-proxies
-  `/api` to the backend (so the browser never needs the key or CORS).
-
-The embedding model is cached in the `fastembed_cache` volume; database data lives
-in the `postgres_data` volume.
+> The backend's embedding step uses ONNX/numpy, which is blocked on some locked-down
+> Windows machines. If `uvicorn` fails to import there, run the backend under **WSL
+> (Ubuntu)** or any Linux/macOS environment — the frontend (`npm run dev`) still runs
+> on Windows and proxies `/api` to the backend.
 
 ## 13. API Documentation
 
@@ -373,8 +369,8 @@ PostgreSQL + pgvector). A database must be reachable at your `DATABASE_URL`, so
 start one first:
 
 ```bash
-# start just the database (or use your local docker rag_postgres from section 7)
-docker compose up -d postgres
+# The suite runs against DATABASE_URL (e.g. your Supabase project). It creates and
+# deletes rows, so point it at a throwaway/dev database rather than production.
 ```
 
 Then run the suite:
