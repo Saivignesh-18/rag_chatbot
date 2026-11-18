@@ -82,6 +82,16 @@ class Settings(BaseSettings):
     # ---- Uploads ----
     max_file_size_mb: int = Field(default=20)
     upload_storage_dir: str = Field(default=str(BACKEND_DIR / "storage"))
+    # Where to store original uploaded files:
+    #   "disk"     -> local filesystem at upload_storage_dir (default; local dev)
+    #   "supabase" -> Supabase Storage private bucket (persistent; Render Free has an
+    #                 ephemeral disk, so production should use this)
+    upload_storage_backend: str = Field(default="disk")
+
+    # ---- Supabase Storage (only used when upload_storage_backend == "supabase") ----
+    supabase_url: str = Field(default="", description="Supabase project URL, e.g. https://<ref>.supabase.co")
+    supabase_service_role_key: str = Field(default="", description="Supabase service-role key (secret).")
+    supabase_bucket: str = Field(default="Documents")
 
     # ---- Rate limiting (slowapi syntax) ----
     rate_limit_upload: str = Field(default="30/minute")
@@ -137,6 +147,16 @@ class Settings(BaseSettings):
     def gemini_configured(self) -> bool:
         key = self.gemini_api_key.strip()
         return bool(key) and key != "YOUR_GEMINI_API_KEY"
+
+    @property
+    def use_supabase_storage(self) -> bool:
+        """True when original uploads should be stored in Supabase Storage."""
+        return self.upload_storage_backend.strip().lower() == "supabase"
+
+    @property
+    def supabase_storage_configured(self) -> bool:
+        """True when both the Supabase URL and service-role key are present."""
+        return bool(self.supabase_url.strip() and self.supabase_service_role_key.strip())
 
     # Supported upload types: extension -> logical file_type.
     ALLOWED_EXTENSIONS: ClassVar[dict[str, str]] = {

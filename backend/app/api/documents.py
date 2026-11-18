@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, get_current_user_flexible
@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.exceptions import EmptyFileError, NotFoundError
 from app.core.logging import get_logger
 from app.core.rate_limit import limiter
+from app.core.security import get_extension
 from app.db.database import get_db
 from app.models.user import User
 from app.schemas.document import (
@@ -21,7 +22,7 @@ from app.schemas.document import (
     DocumentOut,
     UploadResponse,
 )
-from app.services import document_service
+from app.services import document_service, storage_service
 
 logger = get_logger(__name__)
 
@@ -78,13 +79,25 @@ async def download_document(
     document_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_flexible),
-) -> FileResponse:
-    """Return the original stored file (used for the 'View' action / source preview)."""
+) -> Response:
+    """Return the original stored file (used for the 'View' action / source preview).
+
+    Works with both storage backends: a local-disk original is streamed with
+    ``FileResponse``; a Supabase-stored original is fetched and returned inline.
+    """
     document = document_service.get_document(db, current_user.id, document_id)
-    stored = document_service.get_stored_file(document)
-    if stored is None:
+    ext = get_extension(document.filename)
+    path = storage_service.local_path(document.id, ext)
+    if path is not None:
+        return FileResponse(path=str(path), filename=document.filename, content_disposition_type="inline")
+    data = storage_service.fetch_bytes(document.id, ext)
+    if data is None:
         raise NotFoundError("Stored file not found for this document.")
-    return FileResponse(path=str(stored), filename=document.filename, content_disposition_type="inline")
+    return Response(
+        content=data,
+        media_type=storage_service.media_type_for(document.filename),
+        headers={"Content-Disposition": f'inline; filename="{document.filename}"'},
+    )
 
 
 @router.delete("/{document_id}", response_model=DeleteResponse)

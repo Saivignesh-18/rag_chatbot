@@ -1,0 +1,72 @@
+# Render Blueprint — backend only, free tier.
+#
+# Frontend is deployed on Vercel (see frontend/vercel.json); the database is
+# Supabase (PostgreSQL + pgvector). Because Render Free's local disk is
+# EPHEMERAL, original uploaded files are stored in a Supabase Storage PRIVATE
+# bucket named "Documents" (UPLOAD_STORAGE_BACKEND=supabase). Create that bucket
+# in the Supabase dashboard (Storage -> New bucket -> name: Documents, private).
+#
+# Secrets (sync:false) are set in the Render dashboard, never committed here.
+services:
+  - type: web
+    name: document-ai-backend
+    runtime: python
+    plan: free
+    branch: deploy/vercel-render
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+
+      # --- File storage: persist originals in Supabase Storage (bucket "Documents") ---
+      - key: UPLOAD_STORAGE_BACKEND
+        value: supabase
+      - key: SUPABASE_BUCKET
+        value: Documents
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      # --- Database (Supabase Postgres + pgvector) ---
+      - key: DATABASE_URL
+        sync: false
+
+      # --- LLM providers ---
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-flash-latest
+      - key: PRIMARY_LLM
+        value: groq
+      - key: FALLBACK_LLM
+        value: gemini
+      - key: ENABLE_LLM_FALLBACK
+        value: "true"
+
+      # --- Auth ---
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+      # --- Embeddings / retrieval ---
+      - key: EMBEDDING_MODEL
+        value: BAAI/bge-small-en-v1.5
+      - key: TOP_K
+        value: "5"
+      - key: SIMILARITY_THRESHOLD
+        value: "0.5"
+
+      # --- Uploads / CORS ---
+      - key: MAX_FILE_SIZE_MB
+        value: "20"
+      - key: CORS_ORIGINS
+        sync: false

@@ -9,7 +9,6 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.core.exceptions import AppError, DocumentProcessingError, NotFoundError
 from app.core.logging import get_logger
 from app.core.security import get_extension, validate_upload
@@ -20,31 +19,27 @@ from app.models.document import (
     Document,
 )
 from app.services.document_parser import ParsedDocument, parse_document
+from app.services import storage_service
 
 logger = get_logger(__name__)
 
 
-def _storage_dir() -> Path:
-    path = Path(settings.upload_storage_dir)
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+def save_raw_file(document_id: uuid.UUID, ext: str, data: bytes) -> None:
+    """Persist the original bytes for optional preview/download.
 
-
-def _stored_path(document_id: uuid.UUID, ext: str) -> Path:
-    return _storage_dir() / f"{document_id}{ext}"
-
-
-def save_raw_file(document_id: uuid.UUID, ext: str, data: bytes) -> Path:
-    """Persist the original bytes for optional preview/download."""
-    path = _stored_path(document_id, ext)
-    path.write_bytes(data)
-    return path
+    Delegates to the configured storage backend (local disk by default, or a
+    Supabase Storage private bucket when UPLOAD_STORAGE_BACKEND=supabase).
+    """
+    storage_service.save(document_id, ext, data)
 
 
 def get_stored_file(document: Document) -> Path | None:
-    ext = get_extension(document.filename)
-    path = _stored_path(document.id, ext)
-    return path if path.exists() else None
+    """Local filesystem path of the stored original, or ``None``.
+
+    Returns ``None`` for the Supabase backend (the original is not on local disk);
+    the download endpoint fetches those bytes via the storage service directly.
+    """
+    return storage_service.local_path(document.id, get_extension(document.filename))
 
 
 def process_upload(
@@ -152,13 +147,8 @@ def get_document(db: Session, user_id: uuid.UUID, document_id: uuid.UUID) -> Doc
 def delete_document(db: Session, user_id: uuid.UUID, document_id: uuid.UUID) -> None:
     document = get_document(db, user_id, document_id)
 
-    # Remove stored file if present.
-    stored = get_stored_file(document)
-    if stored is not None:
-        try:
-            stored.unlink()
-        except OSError:
-            logger.warning("Could not delete stored file for document id=%s", document_id)
+    # Remove the stored original (disk or Supabase), best-effort.
+    storage_service.delete(document.id, get_extension(document.filename))
 
     # Chunks are removed via ON DELETE CASCADE.
     db.delete(document)
