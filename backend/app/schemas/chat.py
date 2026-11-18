@@ -35,6 +35,13 @@ class ChatResponse(BaseModel):
     answer: str
     sources: list[Source] = []
     session_id: uuid.UUID
+    # Optional NLP preprocessing metadata (additive; older clients ignore these).
+    original_query: str | None = None
+    corrected_query: str | None = None
+    detected_intent: str | None = None
+    preprocessing_applied: bool = False
+    response_source: str = "rag"
+    retrieval_confidence: float | None = None
 
 
 class SessionDocumentOut(BaseModel):

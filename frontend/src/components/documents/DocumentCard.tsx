@@ -6,10 +6,10 @@ import { fadeInUp } from "@/lib/motion";
 import type { DocumentItem, DocumentStatus } from "@/types";
 
 const STATUS_STYLES: Record<DocumentStatus, { dot: string; label: string; text: string }> = {
-  completed: { dot: "bg-emerald-400", label: "Ready", text: "text-emerald-300" },
-  processing: { dot: "bg-amber-400 animate-pulse", label: "Processing", text: "text-amber-300" },
+  completed: { dot: "bg-emerald-400", label: "Ready", text: "text-emerald-600 dark:text-emerald-300" },
+  processing: { dot: "bg-amber-400 animate-pulse", label: "Processing", text: "text-amber-600 dark:text-amber-300" },
   pending: { dot: "bg-slate-400", label: "Pending", text: "text-muted" },
-  failed: { dot: "bg-rose-400", label: "Failed", text: "text-rose-300" },
+  failed: { dot: "bg-rose-400", label: "Failed", text: "text-rose-600 dark:text-rose-300" },
 };
 
 interface DocumentCardProps {
@@ -60,7 +60,7 @@ export default function DocumentCard({ doc, onRequestDelete, compact = false }: 
             </span>
           </div>
           {doc.status === "failed" && doc.error_message && (
-            <p className="mt-1 text-[11px] text-rose-300/80">{doc.error_message}</p>
+            <p className="mt-1 text-[11px] text-rose-600/90 dark:text-rose-300/80">{doc.error_message}</p>
           )}
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function DocumentCard({ doc, onRequestDelete, compact = false }: 
         </a>
         <button
           onClick={() => onRequestDelete(doc)}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted transition hover:bg-rose-500/15 hover:text-rose-300 focus-visible:bg-rose-500/15"
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted transition hover:bg-rose-500/15 hover:text-rose-600 dark:hover:text-rose-300 focus-visible:bg-rose-500/15"
           aria-label={`Delete ${doc.filename}`}
         >
           <Trash2 size={13} aria-hidden /> Delete

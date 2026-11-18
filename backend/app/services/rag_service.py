@@ -2,10 +2,13 @@
 
 Pipeline:
 
-    question -> embedding -> pgvector search restricted to (user's) SELECTED
-    documents (from chat_session_documents) -> threshold gate
-        -> (relevant)     build context -> Groq -> grounded answer + citations
-        -> (not relevant) standard refusal (no LLM call)
+    question -> NLP preprocessing (normalize / spell-correct / intent /
+                 follow-up resolution / query expansion)
+             -> basic conversational intent? -> canned reply (no retrieval/LLM)
+             -> else embedding -> pgvector search restricted to (user's) SELECTED
+                 documents -> relevance check with graceful query fallback
+                     -> (relevant)     build context -> Groq -> grounded answer + citations
+                     -> (not relevant) standard refusal (no LLM call)
 
 Security invariants (the database is the source of truth):
 - Every session and document is verified to belong to the authenticated user.
@@ -35,10 +38,13 @@ from app.services.prompt_service import (
     build_user_prompt,
     sanitize_answer,
 )
-from app.services.retrieval_service import RetrievedChunk, retrieve
-from app.services.smalltalk_service import detect_smalltalk
+from app.services.retrieval_service import RetrievalResult, RetrievedChunk, retrieve
+from app.nlp import preprocess_query
 
 logger = get_logger(__name__)
+
+# How many recent messages to load for follow-up / feedback / clarification.
+_HISTORY_TURNS = 6
 
 
 @dataclass
@@ -65,6 +71,13 @@ class ChatAnswer:
     sources: list[Source] = field(default_factory=list)
     session_id: uuid.UUID | None = None
     refused: bool = False
+    # NLP preprocessing metadata (additive; defaults preserve backward compatibility).
+    original_query: str | None = None
+    corrected_query: str | None = None
+    detected_intent: str | None = None
+    preprocessing_applied: bool = False
+    response_source: str = "rag"
+    retrieval_confidence: float | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -194,6 +207,54 @@ def _build_sources(chunks: list[RetrievedChunk]) -> list[Source]:
     return sources
 
 
+def _recent_history(db: Session, session_id: uuid.UUID, limit: int = _HISTORY_TURNS) -> list[tuple[str, str]]:
+    """Return the most recent prior messages as chronological (role, content).
+
+    Used only for follow-up resolution; the CURRENT user message has not been
+    persisted yet, so this returns strictly prior turns.
+    """
+    rows = db.execute(
+        select(ChatMessage.role, ChatMessage.content)
+        .where(ChatMessage.session_id == session_id)
+        .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
+        .limit(limit)
+    ).all()
+    return [(row.role, row.content) for row in reversed(rows)]
+
+
+def _retrieve_with_fallback(
+    db: Session,
+    *,
+    candidates: list[str],
+    user_id: uuid.UUID,
+    scope_ids: list[uuid.UUID] | None,
+) -> tuple[RetrievalResult | None, float]:
+    """Try each candidate query in order and return the first relevant result.
+
+    Candidates are tried best-first (expanded -> corrected -> original). This
+    prevents a weak first query from prematurely returning "no information found"
+    when a simpler query would have retrieved evidence. Blank/duplicate queries
+    are skipped. Returns ``(result, confidence)`` where ``confidence`` is the best
+    observed max-similarity across attempts (0..1).
+    """
+    seen: set[str] = set()
+    best_result: RetrievalResult | None = None
+    best_confidence = 0.0
+    for raw in candidates:
+        query = (raw or "").strip()
+        key = query.lower()
+        if not query or key in seen:
+            continue
+        seen.add(key)
+        result = retrieve(db, query, user_id=user_id, document_ids=scope_ids)
+        if result.max_similarity > best_confidence:
+            best_confidence = result.max_similarity
+            best_result = result
+        if result.has_relevant:
+            return result, round(result.max_similarity, 4)
+    return best_result, round(best_confidence, 4)
+
+
 def answer_question(db: Session, user: User, session_id: uuid.UUID, question: str) -> ChatAnswer:
     question = (question or "").strip()
     if not question:
@@ -202,17 +263,34 @@ def answer_question(db: Session, user: User, session_id: uuid.UUID, question: st
     # Verify session ownership and derive scope from the database.
     session = _owned_session(db, user, session_id)
 
-    # Greetings / acknowledgements are not document questions: reply in a
-    # friendly way and skip retrieval + the document-only refusal entirely.
-    smalltalk_reply = detect_smalltalk(question)
-    if smalltalk_reply is not None:
+    # Recent prior turns enable follow-up / feedback / clarification handling.
+    history = _recent_history(db, session.id)
+
+    # --- NLP preprocessing: normalize -> spell-correct -> intent -> context ---
+    pre = preprocess_query(question, history=history)
+
+    # Basic conversational intents (greeting / gratitude / goodbye / help /
+    # positive feedback) AND unresolvable follow-ups (which become a clarification
+    # question) are answered directly, WITHOUT embeddings, vector search or any LLM.
+    if pre.is_basic and pre.basic_response:
         if not session.title:
             session.title = question[:60] + ("..." if len(question) > 60 else "")
         db.add(ChatMessage(session_id=session.id, role=ROLE_USER, content=question))
-        db.add(ChatMessage(session_id=session.id, role=ROLE_ASSISTANT, content=smalltalk_reply))
+        db.add(ChatMessage(session_id=session.id, role=ROLE_ASSISTANT, content=pre.basic_response))
         db.commit()
-        logger.info("Chat request handled as small talk (session=%s).", session.id)
-        return ChatAnswer(answer=smalltalk_reply, sources=[], session_id=session.id, refused=False)
+        logger.info("Chat answered by NLP layer (intent=%s, session=%s).", pre.intent, session.id)
+        return ChatAnswer(
+            answer=pre.basic_response,
+            sources=[],
+            session_id=session.id,
+            refused=False,
+            original_query=question,
+            corrected_query=pre.corrected,
+            detected_intent=pre.intent,
+            preprocessing_applied=pre.preprocessing_applied,
+            response_source=pre.response_source,
+            retrieval_confidence=None,
+        )
 
     selected_ids = get_selected_document_ids(db, session.id)
     # A session with an explicit selection restricts to it; a session with no
@@ -220,35 +298,56 @@ def answer_question(db: Session, user: User, session_id: uuid.UUID, question: st
     scope_ids: list[uuid.UUID] | None = selected_ids if selected_ids else None
 
     logger.info(
-        "Chat request: user=%s session=%s selected_docs=%d question_len=%d",
-        user.id, session.id, len(selected_ids), len(question),
+        "Chat request: user=%s session=%s selected_docs=%d intent=%s followup=%s corrected=%s informal=%s",
+        user.id, session.id, len(selected_ids), pre.intent, pre.is_followup,
+        bool(pre.corrections), pre.informal,
     )
 
-    result = retrieve(db, question, user_id=user.id, document_ids=scope_ids)
+    # Retrieve with a relevance check and graceful query fallback. The expanded
+    # (synonym/Telgish-enriched) query is tried first for recall; we then fall
+    # back to the plain corrected and original text.
+    result, retrieval_confidence = _retrieve_with_fallback(
+        db,
+        candidates=[pre.retrieval_query, pre.corrected, pre.original, question],
+        user_id=user.id,
+        scope_ids=scope_ids,
+    )
 
-    if not result.has_relevant:
-        logger.info("No chunks passed threshold (max_sim=%.4f) -> refusing.", result.max_similarity)
+    if result is None or not result.has_relevant:
+        max_sim = result.max_similarity if result is not None else 0.0
+        logger.info("No chunks passed threshold (best_sim=%.4f) -> refusing.", max_sim)
         answer_text = REFUSAL_MESSAGE
         sources: list[Source] = []
         refused = True
     else:
         context = build_context(result.accepted)
-        # The prompt (system + user + retrieved context) is built ONCE here and
-        # passed to the router, so Groq and any fallback (Gemini) receive exactly
-        # the same document-only context and selected-document scope.
+        # For a follow-up asking to expand, nudge the model to add detail - still
+        # strictly from the retrieved context (grounding is unchanged).
+        extra_instruction = (
+            "The user is following up on the previous answer and asked for more "
+            "detail. Expand with additional specifics, using ONLY the context."
+            if pre.elaborate
+            else ""
+        )
+        # The prompt uses the NATURAL question (resolved for follow-ups), NOT the
+        # expanded keyword string, so Groq and any Gemini fallback receive an
+        # identical, focused, document-only prompt.
         completion = llm_router.generate(
             system_prompt=SYSTEM_PROMPT,
-            user_prompt=build_user_prompt(question, context),
+            user_prompt=build_user_prompt(
+                pre.prompt_question or question, context, extra_instruction=extra_instruction
+            ),
         )
         answer_text = sanitize_answer(completion.content)
         sources = _build_sources(result.accepted)
         refused = False
         logger.info(
-            "Chat answer generated with %d source(s) via provider=%s.",
-            len(sources), completion.provider,
+            "Chat answer generated with %d source(s) via provider=%s (confidence=%.4f).",
+            len(sources), completion.provider, retrieval_confidence,
         )
 
-    # Persist messages; set a title from the first question if unset.
+    # Persist messages; set a title from the first question if unset. The user
+    # message stores the ORIGINAL text — we never replace what the user typed.
     if not session.title:
         session.title = question[:60] + ("..." if len(question) > 60 else "")
     db.add(ChatMessage(session_id=session.id, role=ROLE_USER, content=question))
@@ -263,4 +362,15 @@ def answer_question(db: Session, user: User, session_id: uuid.UUID, question: st
     db.commit()
 
     logger.info("Chat request status: OK (session=%s, refused=%s)", session.id, refused)
-    return ChatAnswer(answer=answer_text, sources=sources, session_id=session.id, refused=refused)
+    return ChatAnswer(
+        answer=answer_text,
+        sources=sources,
+        session_id=session.id,
+        refused=refused,
+        original_query=question,
+        corrected_query=pre.corrected,
+        detected_intent=pre.intent,
+        preprocessing_applied=pre.preprocessing_applied,
+        response_source=pre.response_source,
+        retrieval_confidence=retrieval_confidence,
+    )

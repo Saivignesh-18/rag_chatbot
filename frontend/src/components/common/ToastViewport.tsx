@@ -10,9 +10,9 @@ const ICONS: Record<ToastType, typeof Info> = {
 };
 
 const STYLES: Record<ToastType, string> = {
-  success: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
-  error: "border-rose-500/30 bg-rose-500/10 text-rose-200",
-  info: "border-brand-500/30 bg-brand-500/10 text-brand-200",
+  success: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+  error: "border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300",
+  info: "border-brand-500/30 bg-brand-500/10 text-brand-700 dark:text-brand-300",
 };
 
 export default function ToastViewport() {

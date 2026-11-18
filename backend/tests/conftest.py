@@ -66,6 +66,16 @@ def clean_db(client):
     from app.core.config import settings
     from app.db.database import engine
 
+    # SAFETY: this suite is destructive (TRUNCATE). Never run it against a
+    # managed/remote database such as Supabase. Only proceed when DATABASE_URL
+    # clearly targets a local throwaway Postgres.
+    url = (settings.database_url or "").lower()
+    if not any(host in url for host in ("@localhost", "@127.0.0.1", "@postgres", "@::1")):
+        pytest.skip(
+            "Refusing to TRUNCATE a non-local database. Point DATABASE_URL at a "
+            "local throwaway Postgres to run DB-backed tests."
+        )
+
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE users CASCADE"))
         conn.execute(text("TRUNCATE documents CASCADE"))

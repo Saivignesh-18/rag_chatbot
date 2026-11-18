@@ -41,8 +41,8 @@ export default function UploadProgress({ job }: { job: UploadJob }) {
       <div className="flex items-center gap-2">
         <FileText size={16} className="shrink-0 text-accent" aria-hidden />
         <span className="flex-1 truncate text-sm font-medium text-content">{job.name}</span>
-        {job.status === "done" && <CheckCircle2 size={16} className="text-emerald-400" aria-hidden />}
-        {job.status === "error" && <AlertCircle size={16} className="text-rose-400" aria-hidden />}
+        {job.status === "done" && <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400" aria-hidden />}
+        {job.status === "error" && <AlertCircle size={16} className="text-rose-600 dark:text-rose-400" aria-hidden />}
         {(job.status === "uploading" || job.status === "processing") && (
           <Loader2 size={16} className="animate-spin text-accent" aria-hidden />
         )}
@@ -74,7 +74,7 @@ export default function UploadProgress({ job }: { job: UploadJob }) {
             {steps.map((step, i) => (
               <li key={i} className="flex items-center gap-2 text-xs">
                 {step.done ? (
-                  <CheckCircle2 size={14} className="text-emerald-400" aria-hidden />
+                  <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400" aria-hidden />
                 ) : step.active ? (
                   <Loader2 size={14} className="animate-spin text-accent" aria-hidden />
                 ) : (
@@ -88,7 +88,7 @@ export default function UploadProgress({ job }: { job: UploadJob }) {
           </ul>
         </>
       ) : (
-        <p className="mt-2 text-xs text-rose-300">{job.error ?? "Upload failed."}</p>
+        <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">{job.error ?? "Upload failed."}</p>
       )}
     </motion.div>
   );

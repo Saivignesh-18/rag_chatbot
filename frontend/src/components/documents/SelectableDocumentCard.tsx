@@ -6,10 +6,10 @@ import { fadeInUp } from "@/lib/motion";
 import type { DocumentItem, DocumentStatus } from "@/types";
 
 const STATUS: Record<DocumentStatus, { dot: string; label: string; text: string }> = {
-  completed: { dot: "bg-emerald-400", label: "Ready", text: "text-emerald-300" },
-  processing: { dot: "bg-amber-400 animate-pulse", label: "Processing", text: "text-amber-300" },
+  completed: { dot: "bg-emerald-400", label: "Ready", text: "text-emerald-600 dark:text-emerald-300" },
+  processing: { dot: "bg-amber-400 animate-pulse", label: "Processing", text: "text-amber-600 dark:text-amber-300" },
   pending: { dot: "bg-slate-400", label: "Pending", text: "text-muted" },
-  failed: { dot: "bg-rose-400", label: "Failed", text: "text-rose-300" },
+  failed: { dot: "bg-rose-400", label: "Failed", text: "text-rose-600 dark:text-rose-300" },
 };
 
 interface Props {
@@ -89,7 +89,7 @@ export default function SelectableDocumentCard({ doc, selected, onToggle, onRequ
         </a>
         <button
           onClick={() => onRequestDelete(doc)}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted transition hover:bg-rose-500/15 hover:text-rose-300"
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted transition hover:bg-rose-500/15 hover:text-rose-600 dark:hover:text-rose-300"
           aria-label={`Delete ${doc.filename}`}
         >
           <Trash2 size={13} aria-hidden /> Delete

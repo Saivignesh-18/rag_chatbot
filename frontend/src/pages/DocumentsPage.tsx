@@ -100,7 +100,7 @@ export default function DocumentsPage() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
           <div className="mb-5">
-            <h1 className="text-xl font-bold text-content sm:text-2xl">Documents</h1>
+            <h1 className="font-display text-xl font-bold text-content sm:text-2xl">Documents</h1>
             <p className="mt-1 text-sm text-muted">
               Upload documents, then select the ones you want to chat with.
             </p>
@@ -212,7 +212,7 @@ export default function DocumentsPage() {
                 </span>
                 <button
                   onClick={selectAllVisible}
-                  className="text-xs text-accent hover:text-brand-200"
+                  className="text-xs text-accent transition hover:text-brand-700 dark:hover:text-brand-300"
                 >
                   Select all ready ({readyCount})
                 </button>

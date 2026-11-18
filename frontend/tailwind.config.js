@@ -18,19 +18,19 @@ export default {
         muted: "rgb(var(--muted) / <alpha-value>)",
         subtle: "rgb(var(--subtle) / <alpha-value>)",
         accent: "rgb(var(--accent) / <alpha-value>)",
-        // Brand palette (indigo/violet) for a premium SaaS feel.
+        // Brand palette (sage green) for a calm, light enterprise feel.
         brand: {
-          50: "#eef2ff",
-          100: "#e0e7ff",
-          200: "#c7d2fe",
-          300: "#a5b4fc",
-          400: "#818cf8",
-          500: "#6366f1",
-          600: "#4f46e5",
-          700: "#4338ca",
-          800: "#3730a3",
-          900: "#312e81",
-          950: "#1e1b4b",
+          50: "#f4f7f3",
+          100: "#e5ece2",
+          200: "#cdd9c8",
+          300: "#b2c6aa",
+          400: "#98b68c",
+          500: "#7a9a6e",
+          600: "#607b56",
+          700: "#4b6144",
+          800: "#3d4e38",
+          900: "#334130",
+          950: "#26301f",
         },
         surface: {
           DEFAULT: "#0b0f1a",
@@ -54,10 +54,19 @@ export default {
           "sans-serif",
         ],
         mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
+        display: [
+          "Plus Jakarta Sans",
+          "Inter",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(99,102,241,0.2), 0 8px 30px rgba(79,70,229,0.15)",
-        card: "0 1px 2px rgba(0,0,0,0.06), 0 8px 24px rgba(15,23,42,0.06)",
+        glow: "0 0 0 1px rgba(122,154,110,0.25), 0 8px 30px rgba(96,123,86,0.18)",
+        card: "0 1px 2px rgba(51,65,48,0.05), 0 8px 24px rgba(51,65,48,0.07)",
+        soft: "0 1px 2px rgba(51,65,48,0.04), 0 10px 34px rgba(51,65,48,0.10)",
+        glass: "0 8px 32px rgba(51,65,48,0.14), inset 0 1px 0 rgba(255,255,255,0.6)",
       },
       keyframes: {
         "fade-in": {

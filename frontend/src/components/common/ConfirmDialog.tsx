@@ -61,7 +61,7 @@ export default function ConfirmDialog({
               <div
                 className={
                   "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl " +
-                  (destructive ? "bg-rose-500/15 text-rose-300" : "bg-brand-500/15 text-accent")
+                  (destructive ? "bg-rose-500/15 text-rose-600 dark:text-rose-300" : "bg-brand-500/15 text-accent")
                 }
               >
                 <AlertTriangle size={22} aria-hidden />

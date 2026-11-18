@@ -65,10 +65,21 @@ export default function ChatPage() {
   const handleSend = useCallback(
     async (text: string) => {
       if (sending || !session) return;
-      setMessages((prev) => [...prev, { id: localId(), role: "user", content: text }]);
+      const userMsgId = localId();
+      setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: text }]);
       setSending(true);
       try {
         const res = await sendChat(session.id, text);
+        // If NLP corrected the query, annotate the user message (without replacing it).
+        if (res.corrected_query && res.corrected_query !== (res.original_query ?? text)) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === userMsgId
+                ? { ...m, corrected_query: res.corrected_query, original_query: res.original_query ?? text }
+                : m
+            )
+          );
+        }
         setMessages((prev) => [
           ...prev,
           { id: localId(), role: "assistant", content: res.answer, sources: res.sources },
@@ -113,7 +124,7 @@ export default function ChatPage() {
   if (loadError || !session) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
-        <AlertCircle size={28} className="text-rose-300" aria-hidden />
+        <AlertCircle size={28} className="text-rose-600 dark:text-rose-300" aria-hidden />
         <p className="text-sm text-muted">{loadError ?? "Chat session not found."}</p>
         <button
           onClick={() => navigate("/app/documents")}
@@ -167,7 +178,7 @@ export default function ChatPage() {
             >
               <Quote size={14} aria-hidden /> Sources
               {latestSources.length > 0 && (
-                <span className="rounded-full bg-brand-500/20 px-1.5 text-[10px] text-brand-200">
+                <span className="rounded-full bg-brand-500/20 px-1.5 text-[10px] text-brand-700 dark:text-brand-200">
                   {latestSources.length}
                 </span>
               )}

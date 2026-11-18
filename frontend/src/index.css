@@ -10,28 +10,28 @@
    ============================================================ */
 :root {
   color-scheme: light;
-  --bg: 248 250 252; /* slate-50 */
+  --bg: 244 247 243; /* sage-50 */
   --panel: 255 255 255; /* elevated surfaces (dialogs, dropdowns) */
   --card: 255 255 255;
-  --card2: 241 245 249; /* slate-100 */
-  --line: 226 232 240; /* slate-200 */
-  --content: 15 23 42; /* slate-900 */
-  --muted: 71 85 105; /* slate-600 */
-  --subtle: 100 116 139; /* slate-500 */
-  --accent: 79 70 229; /* brand-600 */
+  --card2: 235 240 232; /* soft sage tint */
+  --line: 205 217 200; /* sage-200 */
+  --content: 29 42 32; /* dark sage charcoal */
+  --muted: 75 90 72; /* muted gray-green */
+  --subtle: 110 125 106; /* subtle gray-green */
+  --accent: 96 123 86; /* brand-600 (sage) */
 }
 
 .dark {
   color-scheme: dark;
-  --bg: 11 15 26;
-  --panel: 17 24 39;
-  --card: 24 31 45;
-  --card2: 33 42 58;
-  --line: 42 50 66;
-  --content: 241 245 249;
-  --muted: 148 163 184;
-  --subtle: 100 116 139;
-  --accent: 165 180 252; /* brand-300 */
+  --bg: 18 24 19; /* dark green charcoal */
+  --panel: 24 31 25;
+  --card: 28 36 29;
+  --card2: 37 47 38;
+  --line: 49 61 50;
+  --content: 230 236 228;
+  --muted: 152 167 149;
+  --subtle: 120 135 118;
+  --accent: 152 182 140; /* brand-400 (sage) */
 }
 
 html,
@@ -79,4 +79,24 @@ body {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ============================================================
+   Decorative utilities for brand / hero panels.
+   ============================================================ */
+
+/* Subtle sage grid, used behind brand panels and heroes. */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(to right, rgba(96, 123, 86, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(96, 123, 86, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Frosted-glass surface for floating panels. */
+.glass-panel {
+  background-color: rgb(255 255 255 / 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgb(255 255 255 / 0.5);
 }

@@ -45,8 +45,18 @@ def build_context(chunks: Sequence[RetrievedChunk]) -> str:
     return "\n\n---\n\n".join(blocks)
 
 
-def build_user_prompt(question: str, context: str) -> str:
-    """Assemble the final user prompt with the context and grounding instructions."""
+def build_user_prompt(question: str, context: str, extra_instruction: str = "") -> str:
+    """Assemble the final user prompt with the context and grounding instructions.
+
+    ``extra_instruction`` (optional) injects a small directive, e.g. asking the
+    model to elaborate on a follow-up. When empty the prompt is byte-for-byte the
+    original, so existing behaviour is unchanged.
+    """
+    extra = (
+        f"{extra_instruction.strip()}\n\n"
+        if extra_instruction and extra_instruction.strip()
+        else ""
+    )
     return (
         "Use ONLY the following document context to answer the question. "
         "If the answer is not contained in the context, respond EXACTLY with:\n"
@@ -56,6 +66,7 @@ def build_user_prompt(question: str, context: str) -> str:
         "- Do NOT emit special citation markup or bracketed source tags such as "
         "\u3010...\u3011 or [oai_citation]. Sources are shown separately to the user.\n"
         "- If you reference a source, do so naturally, e.g. (SRS.pdf, page 2).\n\n"
+        f"{extra}"
         "Document context:\n"
         '"""\n'
         f"{context}\n"

@@ -67,8 +67,18 @@ export default function ChatMessage({ message }: { message: ChatMessageT }) {
         transition={{ duration: 0.22 }}
         className="flex items-start justify-end gap-3"
       >
-        <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-brand-600 px-4 py-2.5 text-sm text-white shadow-card sm:max-w-[75%]">
-          {message.content}
+        <div className="flex max-w-[85%] flex-col items-end sm:max-w-[75%]">
+          <div className="rounded-2xl rounded-tr-sm bg-brand-600 px-4 py-2.5 text-sm text-white shadow-card">
+            {message.content}
+          </div>
+          {message.corrected_query && (
+            <p
+              className="mt-1 px-1 text-[11px] text-muted"
+              title={`Original: ${message.original_query ?? message.content}`}
+            >
+              <Sparkles size={10} className="mr-1 inline" aria-hidden /> Searched as “{message.corrected_query}”
+            </p>
+          )}
         </div>
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-card2 text-muted">
           <User size={16} aria-hidden />
@@ -89,7 +99,7 @@ export default function ChatMessage({ message }: { message: ChatMessageT }) {
       <span
         className={cn(
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-          message.error ? "bg-rose-500/15 text-rose-300" : "bg-brand-500/15 text-accent"
+          message.error ? "bg-rose-500/15 text-rose-600 dark:text-rose-300" : "bg-brand-500/15 text-accent"
         )}
       >
         {message.error ? <AlertCircle size={16} aria-hidden /> : <Sparkles size={16} aria-hidden />}
@@ -103,7 +113,7 @@ export default function ChatMessage({ message }: { message: ChatMessageT }) {
             className={cn(
               "rounded-2xl rounded-tl-sm border px-4 py-3",
               message.error
-                ? "border-rose-500/20 bg-rose-500/5 text-rose-100"
+                ? "border-rose-500/20 bg-rose-500/5 text-rose-700 dark:text-rose-100"
                 : "border-line bg-card"
             )}
           >

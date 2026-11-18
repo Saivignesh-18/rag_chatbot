@@ -24,9 +24,9 @@ import { fileTypeLabel, formatDate } from "@/lib/utils";
 
 const STAT_CARDS = [
   { key: "documents", label: "Documents", icon: FileText, accent: "text-accent bg-brand-500/15" },
-  { key: "ready_documents", label: "Ready", icon: CheckCircle2, accent: "text-emerald-300 bg-emerald-500/15" },
-  { key: "chat_sessions", label: "Chat Sessions", icon: MessagesSquare, accent: "text-cyan-300 bg-cyan-500/15" },
-  { key: "questions", label: "Questions Asked", icon: FolderOpen, accent: "text-fuchsia-300 bg-fuchsia-500/15" },
+  { key: "ready_documents", label: "Ready", icon: CheckCircle2, accent: "text-emerald-600 dark:text-emerald-300 bg-emerald-500/15" },
+  { key: "chat_sessions", label: "Chat Sessions", icon: MessagesSquare, accent: "text-accent bg-brand-500/15" },
+  { key: "questions", label: "Questions Asked", icon: FolderOpen, accent: "text-accent bg-brand-500/15" },
 ] as const;
 
 const EXAMPLES = [
@@ -100,19 +100,17 @@ export default function HomePage() {
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             aria-hidden
           >
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-400 via-fuchsia-500 to-brand-600 opacity-70 blur-xl" />
-            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-brand-300 via-fuchsia-400 to-brand-600" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600 opacity-70 blur-xl" />
+            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-brand-200 via-brand-400 to-brand-600" />
             <div className="absolute right-4 top-3 h-3.5 w-3.5 rounded-full bg-white/80 blur-[1px]" />
           </motion.div>
 
-          <h1 className="text-3xl font-bold tracking-tight text-content sm:text-4xl">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-content sm:text-4xl">
             Good {timeOfDay()}, {firstName}
           </h1>
-          <h2 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h2 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
             <span className="text-content">What's on your </span>
-            <span className="bg-gradient-to-r from-brand-500 to-fuchsia-500 bg-clip-text text-transparent">
-              mind?
-            </span>
+            <span className="text-accent">mind?</span>
           </h2>
 
           {/* Prompt input */}
@@ -235,7 +233,7 @@ export default function HomePage() {
           <section>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Recent Documents</h2>
-              <button onClick={() => navigate("/app/documents")} className="text-xs text-accent hover:text-brand-200">
+              <button onClick={() => navigate("/app/documents")} className="text-xs text-accent transition hover:text-brand-700 dark:hover:text-brand-300">
                 View all
               </button>
             </div>
@@ -276,7 +274,7 @@ export default function HomePage() {
                     onClick={() => navigate(`/app/chat/${s.id}`)}
                     className="flex w-full items-center gap-3 rounded-xl border border-line bg-card p-3 text-left transition hover:bg-card2"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-300">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500/15 text-accent">
                       <MessagesSquare size={16} aria-hidden />
                     </span>
                     <div className="min-w-0 flex-1">

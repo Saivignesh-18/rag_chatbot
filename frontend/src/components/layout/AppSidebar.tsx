@@ -40,7 +40,7 @@ export default function AppSidebar({ onNavigate }: { onNavigate?: () => void }) 
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-glow">
           <FileText size={16} aria-hidden />
         </span>
-        <span className="text-sm font-semibold text-content">Document AI</span>
+        <span className="font-display text-sm font-semibold text-content">Document AI</span>
       </div>
 
       <div className="px-3">
@@ -108,7 +108,7 @@ export default function AppSidebar({ onNavigate }: { onNavigate?: () => void }) 
                     e.stopPropagation();
                     setPendingDelete(s);
                   }}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-subtle opacity-100 transition hover:bg-rose-500/10 hover:text-rose-300 focus:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-subtle opacity-100 transition hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-300 focus:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
                   aria-label={`Delete chat: ${s.title ?? "Untitled chat"}`}
                   title="Delete chat"
                 >
@@ -124,7 +124,7 @@ export default function AppSidebar({ onNavigate }: { onNavigate?: () => void }) 
       <div className="border-t border-line p-3">
         <button
           onClick={() => void logout()}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition hover:bg-rose-500/10 hover:text-rose-300"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-300"
         >
           <LogOut size={16} aria-hidden /> Logout
         </button>

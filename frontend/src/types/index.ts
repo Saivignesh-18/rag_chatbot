@@ -28,6 +28,13 @@ export interface ChatResponse {
   answer: string;
   sources: Source[];
   session_id: string;
+  // Optional NLP preprocessing metadata (absent on older backends).
+  original_query?: string | null;
+  corrected_query?: string | null;
+  detected_intent?: string | null;
+  preprocessing_applied?: boolean;
+  response_source?: string;
+  retrieval_confidence?: number | null;
 }
 
 export type MessageRole = "user" | "assistant";
@@ -41,6 +48,10 @@ export interface ChatMessage {
   // Client-only flags:
   pending?: boolean;
   error?: boolean;
+  // Client-only: a subtle "searched as" note shown under the user bubble when
+  // NLP corrected the query. The visible message is never replaced.
+  corrected_query?: string | null;
+  original_query?: string | null;
 }
 
 export interface ChatSession {

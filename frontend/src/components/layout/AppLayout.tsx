@@ -27,7 +27,7 @@ export default function AppLayout() {
             <Menu size={20} />
           </button>
           <div className="lg:hidden">
-            <span className="text-sm font-semibold text-content">Document AI</span>
+            <span className="font-display text-sm font-semibold text-content">Document AI</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />

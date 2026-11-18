@@ -44,6 +44,15 @@ async def lifespan(app: FastAPI):
     except Exception:  # pragma: no cover - startup diagnostics
         logger.exception("Database initialisation failed. Is PostgreSQL running with pgvector?")
         raise
+
+    # Warm the NLP spelling dictionary once at startup (graceful: never raises).
+    from app.nlp.spelling import spelling_corrector
+
+    if spelling_corrector.warmup():
+        logger.info("NLP spelling corrector ready.")
+    else:
+        logger.warning("NLP spelling corrector not loaded; spelling correction disabled.")
+
     yield
     logger.info("Shutting down %s", settings.app_name)
 

@@ -51,6 +51,12 @@ async def chat(
         answer=result.answer,
         sources=[Source(**s.to_json()) for s in result.sources],
         session_id=result.session_id,
+        original_query=result.original_query,
+        corrected_query=result.corrected_query,
+        detected_intent=result.detected_intent,
+        preprocessing_applied=result.preprocessing_applied,
+        response_source=result.response_source,
+        retrieval_confidence=result.retrieval_confidence,
     )
 
 
